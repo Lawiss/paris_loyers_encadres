@@ -88,37 +88,52 @@ construction_year_df_filter = [construction_year_filters[e] for e in constructio
 flat_type_df_filter = [flat_type_filters[e] for e in flat_type]
 selected_variable = variable_filters[variable]
 
-selected_gdf_mean = (
-    gdf.loc[
-        (gdf.epoque.isin(construction_year_df_filter))
-        & (gdf.meuble_txt.isin(flat_type_df_filter))
-        & (gdf.piece.isin(num_rooms_df_filter)),
-    ]
-    .groupby("code_grand_quartier")
-    .agg(value=(selected_variable, "mean"), geometry=("geometry", "first"))
-)
-selected_gdf_mean = geopandas.GeoDataFrame(selected_gdf_mean)
+selection_error = False
+for selections in [
+    num_rooms_df_filter,
+    construction_year_df_filter,
+    flat_type_df_filter,
+    selected_variable,
+]:
+    if len(selections) == 0:
+        st.error(
+            "Merci de sélectionner au moins une valeur pour chacune des caractéristiques"
+        )
+        selection_error = True
 
-text = f"""Pour votre sélection, le {variable.lower()} est compris entre **{selected_gdf_mean.value.round(2).min()}** €/m² et **{selected_gdf_mean.value.round(2).max()}** €/m²."""
-st.markdown(text)
+print(selection_error)
+if not selection_error:
+    selected_gdf_mean = (
+        gdf.loc[
+            (gdf.epoque.isin(construction_year_df_filter))
+            & (gdf.meuble_txt.isin(flat_type_df_filter))
+            & (gdf.piece.isin(num_rooms_df_filter)),
+        ]
+        .groupby("code_grand_quartier")
+        .agg(value=(selected_variable, "mean"), geometry=("geometry", "first"))
+    )
+    selected_gdf_mean = geopandas.GeoDataFrame(selected_gdf_mean)
 
-fig = px.choropleth_mapbox(
-    selected_gdf_mean,
-    geojson=selected_gdf_mean.geometry,
-    locations=selected_gdf_mean.index,
-    color=selected_gdf_mean.value.round(2),
-    center={"lat": 48.86, "lon": 2.33},
-    mapbox_style="open-street-map",
-    zoom=11,
-    height=600,
-    width=900,
-    opacity=0.5,
-    labels={"color": f"{variable} (€/m²)"},
-    color_continuous_scale=["#fee6ce", "#fdae6b", "#e6550d"],
-    range_color=[
-        math.floor(selected_gdf_mean.value.min()),
-        math.ceil(selected_gdf_mean.value.max()),
-    ],
-)
+    text = f"""Pour votre sélection, le {variable.lower()} est compris entre **{selected_gdf_mean.value.round(2).min()}** €/m² et **{selected_gdf_mean.value.round(2).max()}** €/m²."""
+    st.markdown(text)
 
-st.plotly_chart(fig, use_container_width=True)
+    fig = px.choropleth_mapbox(
+        selected_gdf_mean,
+        geojson=selected_gdf_mean.geometry,
+        locations=selected_gdf_mean.index,
+        color=selected_gdf_mean.value.round(2),
+        center={"lat": 48.86, "lon": 2.33},
+        mapbox_style="open-street-map",
+        zoom=11,
+        height=600,
+        width=900,
+        opacity=0.5,
+        labels={"color": f"{variable} (€/m²)"},
+        color_continuous_scale=["#fee6ce", "#fdae6b", "#e6550d"],
+        range_color=[
+            math.floor(selected_gdf_mean.value.min()),
+            math.ceil(selected_gdf_mean.value.max()),
+        ],
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
