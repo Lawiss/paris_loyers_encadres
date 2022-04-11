@@ -13,8 +13,6 @@ st.set_page_config(
 
 DATA_PATH = "https://opendata.paris.fr/explore/dataset/logement-encadrement-des-loyers/download/?format=geojson&timezone=Europe/Berlin&lang=fr"
 
-NON_NUMERIC_COLUMNS = ["codeiris", "zonage", "commune", "insee", "gid", "geometry"]
-
 
 @st.cache
 def get_data(file_path: Path) -> geopandas.GeoDataFrame:
@@ -101,7 +99,6 @@ for selections in [
         )
         selection_error = True
 
-print(selection_error)
 if not selection_error:
     selected_gdf_mean = (
         gdf.loc[
